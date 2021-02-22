@@ -130,3 +130,7 @@ dmypy.json
 
 # Pycharm configs
 .idea
+
+# GeoLite2 City data
+GeoLite2/
+pcaps/
