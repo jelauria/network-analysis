@@ -2,6 +2,10 @@ import dpkt
 import geoip2.database
 import socket
 import pandas as pd
+from shapely.geometry import Point
+import geopandas as gpd
+from geopandas import GeoDataFrame
+import matplotlib.pyplot as plt
 
 
 def ip_geo_info_(target):
@@ -15,7 +19,7 @@ def ip_geo_info_(target):
         iso = resp.country.iso_code
         lat = resp.location.latitude
         long = resp.location.longitude
-        data = [city, region, iso, lat, long]
+        data = [city, region, iso, float(lat), float(long)]
         for i in range(len(data)):
             if data[i] is None:
                 data[i] = "Unknown"
@@ -42,11 +46,29 @@ def loc_array_pcap(pcap):
     return result
 
 
-f = open('pcaps/2020-08-21-traffic-analysis-exercise.pcap', 'rb')
-pcap = dpkt.pcap.Reader(f)
-loc_data = loc_array_pcap(pcap)
-df = pd.DataFrame(loc_data, columns=['Source IP', 'S City', 'S Region', 'S Country', 'S Lat', 'S Long',
-                                     'Destination IP', 'D City', 'D Region', 'D Country', 'D Lat', 'D Long'])
-df.to_csv('out/finished.csv')
-print(ip_geo_info_('122.124.6.1'))
-print(ip_geo_info_('192.168.0.0'))
+def to_map(df):
+    srcs = [Point(xy) for xy in zip(df['S Long'], df['S Lat'])]
+    # dsts = [Point(xy) for xy in zip(df['D Long'], df['D Lat'])]
+    sdf = GeoDataFrame(df[['S Lat', 'S Long']], geometry=srcs)
+    # ddf = GeoDataFrame(df['D Lat', 'D Long'], geometry=dsts)
+    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+    sdf.plot(ax=world.plot(figsize=(10, 6)), marker='o', color='red', markersize=10)
+    # ddf.plot(ax=world.plot(figsize=(10, 6)), marker='o', color='yellow', markersize=10)
+    plt.show()
+
+def main():
+    f = open('pcaps/2020-08-21-traffic-analysis-exercise.pcap', 'rb')
+    pcap = dpkt.pcap.Reader(f)
+    loc_data = loc_array_pcap(pcap)
+    df = pd.DataFrame(loc_data, columns=['Source IP', 'S City', 'S Region', 'S Country', 'S Lat', 'S Long',
+                                         'Destination IP', 'D City', 'D Region', 'D Country', 'D Lat', 'D Long'])
+    df2 = df[df['S Long'] != 'Unknown']
+    # df2 = df2[df2['D Long'] != 'Unknown']
+    to_map(df2)
+    # df.to_csv('out/finished.csv')
+    # print(ip_geo_info_('122.124.6.1'))
+    # print(ip_geo_info_('192.168.0.0'))
+
+
+if __name__=="__main__":
+    main()
