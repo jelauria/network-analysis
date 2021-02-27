@@ -1,2 +1,2 @@
 # network-analysis
-A collection of scripts written to aid with network traffic analysis
+A script designed to read in .pcap files and plot their source locations onto a map
